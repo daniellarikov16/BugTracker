@@ -23,7 +23,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 def create_task(db: Session, task: schemas.TaskCreate):
-    db_task = models.Task(**task.model_dump())
+    db_task = models.Task(**task.dict())
     db.add(db_task)
     db.commit()
     db.refresh(db_task)

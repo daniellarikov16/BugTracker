@@ -7,9 +7,8 @@ from os.path import abspath, dirname
 
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
-from app.models import Base
+from app.database import Base
 target_metadata = Base.metadata
-
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,11 +19,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-
-target_metadata = None
-
-
-
+# Remove this line as it's overwriting your metadata
+# target_metadata = None
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

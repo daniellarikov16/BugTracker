@@ -1,11 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
 
 class UserBase(BaseModel):
     username: str
-    role: str
 
 class UserCreate(UserBase):
     password: str
@@ -24,8 +23,10 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    creator_id: int
-    status: str = "To do"
+    priority: str
+    assignee_id: Optional[int] = Field(None)
+    blocks: List[int] = Field(default_factory=list)
+    blocked_by: List[int] = Field(default_factory=list)
 
 
 class Task(TaskBase):
@@ -42,7 +43,11 @@ class Task(TaskBase):
     class Config:
         from_attributes = True
 
-
 class TaskUpdate(BaseModel):
     status: Optional[str] = None
     assignee_id: Optional[int] = None
+
+class ChangePasswordRequest(BaseModel):
+    username: str
+    current_password: str
+    new_password: str

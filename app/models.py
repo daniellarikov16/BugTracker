@@ -10,7 +10,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
-    role = Column(Enum("manager", "team_lead", "developer", "tester", name="user_roles"), nullable=False)
+    role = Column(Enum("manager", "team_lead", "developer", "tester", name="user_roles"), nullable=False, default="developer")
 
 
 class Task(Base):

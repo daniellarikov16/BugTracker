@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from http.cookiejar import Cookie
+
+from fastapi import FastAPI, Response,  Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from . import models, schemas, crud, auth
 from .database import engine, get_db
@@ -19,6 +21,7 @@ async def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/auth/login")
 async def login(
+        response: Response,
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
@@ -31,11 +34,31 @@ async def login(
     access_token = auth.create_access_token(
         data={"sub": user.username}
     )
+    response.set_cookie(key="user_id",value=str(user.id))
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/tasks")
-async def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
-    return crud.create_task(db, task)
+@app.post("/change-password")
+async def change_password(
+        password_data: schemas.ChangePasswordRequest,
+        db: Session = Depends(get_db)
+):
+    try:
+        crud.change_password(
+            db=db,
+            username=password_data.username,
+            current_password=password_data.current_password,
+            new_password=password_data.new_password
+        )
+        return {"message": "Пароль успешно изменен"}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        )
+
+@app.post("/create-task")
+async def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), creator_id = Depends(crud.get_user_id_from_cookie)):
+    return crud.create_task(db, task, creator_id)
 
 @app.get("/tasks/{task_id}")
 async def read_task(task_id: int, db: Session = Depends(get_db)):

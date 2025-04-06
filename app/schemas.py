@@ -44,11 +44,10 @@ class Task(TaskBase):
 
     class Config:
         from_attributes = True
-
-class TaskUpdate(BaseModel):
-    status: Optional[str] = None
-    assignee_id: Optional[int] = None
-
+class TaskUpdateStatus(BaseModel):
+    task_id: int
+    new_status: str
+    new_assignee_id: int
 class ChangePasswordRequest(BaseModel):
     username: str
     current_password: str

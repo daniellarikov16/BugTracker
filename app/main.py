@@ -6,6 +6,7 @@ from . import models, schemas, crud, auth
 from .database import engine, get_db
 from sqlalchemy.orm import Session
 
+from .schemas import TaskUpdateStatus
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -84,9 +85,7 @@ async def change_role(task_id: int,
                       db: Session = Depends(get_db),
                       user_id: int = Depends(crud.get_user_id_from_cookie)):
     return crud.delete_task(db, task_id, user_id)
-@app.get("/tasks")
-async def get_all_tasks(skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db)):
-    tasks = crud.get_tasks(db, skip=skip, limit=limit)
-    return tasks
+
+@app.post("/tasks/update")
+async def update_task(task:schemas.TaskUpdateStatus, db: Session = Depends(get_db)):
+    return crud.change_task_status(db, task)

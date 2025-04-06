@@ -111,6 +111,9 @@ def get_task(db: Session, task_id: int):
         return schemas.Task.model_validate(task)
     return None
 
+def get_tasks(db: Session, skip: int, limit: int):
+    return db.query(models.Task).offset(skip).limit(limit).all()
+
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
@@ -129,3 +132,53 @@ def authenticate_user(db: Session, username: str, password: str):
             detail="Неверное имя пользователя или пароль"
         )
     return user
+
+def check_manager(db: Session, user_id: int):
+    role = get_user_role(db, user_id)
+    if role != "manager":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Доступ запрещен. Вы не менеджер"
+        )
+    else:
+        return True
+
+def change_login_by_manager(db: Session, data:schemas.UserUpdateUsername, user_id: int):
+    if check_manager(db, user_id):
+        user = db.query(models.User).filter(models.User.id == data.id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Пользователь не найден")
+        new_username_check = get_user_by_username(db, data.new_username)
+        if new_username_check:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Имя пользователя занято")
+        user.username = data.new_username
+        db.commit()
+        db.refresh(user)
+
+        return user
+def change_role_by_manager(db: Session, data:schemas.UserUpdateRole, user_id: int):
+    if check_manager(db, user_id):
+        user = db.query(models.User).filter(models.User.id == data.id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Пользователь не найден")
+        if not get_user(db, data.id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+
+        user.role = data.new_role
+        db.commit()
+        db.refresh(user)
+        return user
+
+def delete_task(db: Session, task_id: int, user_id: int):
+    if check_manager(db, user_id):
+        task = task = db.query(models.Task).filter(models.Task.id == task_id).first()
+        if not task:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Запись не найдена")
+        db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
+        db.delete(db_task)
+        db.commit()
+        return task

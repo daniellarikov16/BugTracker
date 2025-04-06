@@ -67,4 +67,26 @@ async def read_task(task_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
+@app.post("/manager/change-login")
+async def change_login(data: schemas.UserUpdateUsername,
+                       db: Session = Depends(get_db),
+                       user_id: int = Depends(crud.get_user_id_from_cookie)):
+    return crud.change_login_by_manager(db, data, user_id)
 
+@app.post("/manager/change-role")
+async def change_role(data: schemas.UserUpdateRole,
+                       db: Session = Depends(get_db),
+                       user_id: int = Depends(crud.get_user_id_from_cookie)):
+    return crud.change_role_by_manager(db, data, user_id)
+
+@app.post("/manager/delete-task")
+async def change_role(task_id: int,
+                      db: Session = Depends(get_db),
+                      user_id: int = Depends(crud.get_user_id_from_cookie)):
+    return crud.delete_task(db, task_id, user_id)
+@app.get("/tasks")
+async def get_all_tasks(skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)):
+    tasks = crud.get_tasks(db, skip=skip, limit=limit)
+    return tasks

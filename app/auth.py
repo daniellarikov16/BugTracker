@@ -2,8 +2,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from . import crud
-from .database import SessionLocal
+from app import crud
+from app.database import SessionLocal
 import os
 
 

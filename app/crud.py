@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from fastapi import Cookie, HTTPException, status
-from . import models, schemas
+from app import models, schemas
 from passlib.context import CryptContext
 from datetime import datetime
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response,  Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from . import models, schemas, crud, auth
-from .database import engine, get_db
+from app import models, schemas, crud, auth
+from app.database import engine, get_db
 from sqlalchemy.orm import Session
 from typing import List
 

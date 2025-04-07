@@ -14,12 +14,15 @@ class User(UserBase):
     role: str
     class Config:
         from_attributes = True
+
 class UserUpdateUsername(BaseModel):
     id: int
     new_username: str
+
 class UserUpdateRole(BaseModel):
     id: int
     new_role: str
+
 class TaskBase(BaseModel):
     type: str
     title: str
@@ -44,10 +47,17 @@ class Task(TaskBase):
 
     class Config:
         from_attributes = True
+
 class TaskUpdateStatus(BaseModel):
     task_id: int
     new_status: str
     new_assignee_id: int
+
+class TaskSearch(BaseModel):
+    query: Optional[str] = None
+    limit: int = 20
+    offset: int = 0
+
 class ChangePasswordRequest(BaseModel):
     username: str
     current_password: str

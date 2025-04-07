@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import Cookie, HTTPException, status
 from . import models, schemas
 from passlib.context import CryptContext
@@ -108,13 +109,6 @@ def create_task(db: Session, task_data: schemas.TaskCreate, creator_id: int):
     db.refresh(db_task)
     return db_task
 
-
-def get_task(db: Session, task_id: int):
-    task = db.query(models.Task).filter(models.Task.id == task_id).first()
-    if task:
-        return schemas.Task.model_validate(task)
-    return None
-
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -183,6 +177,8 @@ def delete_task(db: Session, task_id: int, user_id: int):
         db.commit()
         return task
 
+def get_all_tasks(db: Session):
+    return db.query(models.Task).all()
 
 def change_task_status(db: Session, data: schemas.TaskUpdateStatus):
     ALL_STATUSES = ["To do", "In progress", "Code review", "Dev test", "Testing", "Done", "Wontfix"]
@@ -201,7 +197,6 @@ def change_task_status(db: Session, data: schemas.TaskUpdateStatus):
     new_index = ALL_STATUSES.index(new_status)
 
     if not (current_status == TODO_STATUS and new_status == WONTFIX_STATUS):
-        # For all other cases, enforce sequential transitions
         if new_index != current_index + 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -247,7 +242,6 @@ def change_task_status(db: Session, data: schemas.TaskUpdateStatus):
         db.commit()
         return task
 
-    # Status-specific assignee validation
     if new_status == "In progress":
         if new_assignee_role == "tester":
             raise HTTPException(
@@ -279,8 +273,28 @@ def change_task_status(db: Session, data: schemas.TaskUpdateStatus):
         if data.new_assignee_id != 0:
             task.assignee_id = data.new_assignee_id
 
+
     task.status = new_status
     task.updated_at = datetime.now()
     db.commit()
     db.refresh(task)
     return task
+
+def search_task (db: Session, search: schemas.TaskSearch):
+    query = db.query(models.Task)
+    if search.query:
+        try:
+            task_id = int(search.query)
+            query = query.filter(models.Task.id == task_id)
+        except ValueError:
+            search_pattern = f"%{search.query}%"
+            query = query.filter(
+                or_(
+                    models.Task.title.ilike(search_pattern),
+                    models.Task.description.ilike(search_pattern)
+                )
+            )
+    query = query.order_by(models.Task.updated_at.desc())
+    tasks = query.offset(search.offset).limit(search.limit).all()
+
+    return tasks

@@ -1,12 +1,9 @@
-from http.cookiejar import Cookie
-
 from fastapi import FastAPI, Response,  Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from . import models, schemas, crud, auth
 from .database import engine, get_db
 from sqlalchemy.orm import Session
-
-from .schemas import TaskUpdateStatus
+from typing import List
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -61,13 +58,6 @@ async def change_password(
 async def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), creator_id = Depends(crud.get_user_id_from_cookie)):
     return crud.create_task(db, task, creator_id)
 
-@app.get("/tasks/{task_id}")
-async def read_task(task_id: int, db: Session = Depends(get_db)):
-    task = crud.get_task(db, task_id)
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
-
 @app.post("/manager/change-login")
 async def change_login(data: schemas.UserUpdateUsername,
                        db: Session = Depends(get_db),
@@ -89,3 +79,12 @@ async def change_role(task_id: int,
 @app.post("/tasks/update")
 async def update_task(task:schemas.TaskUpdateStatus, db: Session = Depends(get_db)):
     return crud.change_task_status(db, task)
+
+@app.get("/tasks/all-tasks", response_model=List[schemas.Task])
+def read_tasks(db: Session = Depends(get_db)):
+    tasks = crud.get_all_tasks(db)
+    return tasks
+
+@app.post("/tasks/search")
+async def search_tasks(search: schemas.TaskSearch, db: Session = Depends(get_db)):
+    return crud.search_task(db, search)

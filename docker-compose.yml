@@ -1,21 +1,25 @@
-version: '3.8'
-
 services:
   app:
+    image: bagtracker-app:latest
     build: .
     ports:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=postgresql://postgres:Larikov2006@db/bugtracker
     volumes:
       - .:/app
+    networks:
+      - bagtracker-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
   db:
     image: postgres:13
@@ -27,12 +31,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bagtracker-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+networks:
+  bagtracker-network:
+    driver: bridge
 
 volumes:
   postgres_data:

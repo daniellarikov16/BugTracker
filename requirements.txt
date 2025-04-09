@@ -6,7 +6,7 @@ python-dotenv==1.0.0
 python-jose==3.3.0
 passlib==1.7.4
 alembic==1.13.1
-pydantic==2.6.3
+pydantic==1.10.13
 bcrypt==4.1.2
 python-multipart==0.0.6
 

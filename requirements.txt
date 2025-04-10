@@ -1,4 +1,4 @@
-fastapi>=0.109.2
+fastapi==0.109.2
 uvicorn==0.27.0
 sqlalchemy==2.0.40
 psycopg2-binary==2.9.10
@@ -9,4 +9,8 @@ alembic==1.13.1
 pydantic>=2.0.0
 bcrypt==4.1.2
 python-multipart==0.0.6
+pytest==8.3.5
+httpx==0.28.1
+
+
 

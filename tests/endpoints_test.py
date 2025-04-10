@@ -1,6 +1,63 @@
-import pytest
 from fastapi import status
 
+
+def test_health_check(client):
+    """Тест эндпоинта /health"""
+    response = client.get('/health')
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_get_all_tasks(client, db_session):
+    user_data = {
+        "username": "testuser",
+        "password": "testpass"
+    }
+    client.post("/auth/register", json=user_data)
+    login_response = client.post("/auth/login", data={
+        "username": user_data["username"],
+        "password": user_data["password"]
+    })
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    task_data_1 = {
+        "type": "bug",
+        "title": "Test Task 1",
+        "description": "This is test task 1",
+        "priority": "high",
+        "assignee_id": 0,
+        "blocks": [],
+        "blocked_by": []
+    }
+
+    task_data_2 = {
+        "type": "task",
+        "title": "Test Task 2",
+        "description": "This is test task 2",
+        "priority": "medium",
+        "assignee_id": 0,
+        "blocks": [],
+        "blocked_by": []
+    }
+
+    response_1 = client.post("/create-task", json=task_data_1, headers=headers)
+    response_2 = client.post("/create-task", json=task_data_2, headers=headers)
+
+    assert response_1.status_code == status.HTTP_200_OK
+    assert response_2.status_code == status.HTTP_200_OK
+
+    response = client.get("/tasks/all-tasks", headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+
+    tasks = response.json()
+    print("Полученные задачи:", tasks)
+
+    assert isinstance(tasks, list)
+    assert len(tasks) >= 2
+
+    task_titles = {task["title"] for task in tasks}
+    assert "Test Task 1" in task_titles
+    assert "Test Task 2" in task_titles
 
 def test_register_user(client, db_session):
     user_data = {"username": "newuser", "password": "newpassword"}
@@ -115,11 +172,6 @@ def test_search_tasks(client, db_session):
 
     assert response.status_code == status.HTTP_200_OK
     assert isinstance(response.json(), list)
-
-
-
-import pytest
-from fastapi import status
 
 
 def test_manager_change_login(client, db_session):

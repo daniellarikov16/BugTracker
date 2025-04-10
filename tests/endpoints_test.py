@@ -115,3 +115,105 @@ def test_search_tasks(client, db_session):
 
     assert response.status_code == status.HTTP_200_OK
     assert isinstance(response.json(), list)
+
+
+
+import pytest
+from fastapi import status
+
+
+def test_manager_change_login(client, db_session):
+    regular_user_data = {"username": "regular_user", "password": "regular_pass"}
+    regular_user_response = client.post("/auth/register", json=regular_user_data)
+    regular_user_id = regular_user_response.json()["id"]
+
+    manager_data = {"username": "manager_user", "password": "manager_pass"}
+    manager_response = client.post("/auth/register", json=manager_data)
+    manager_id = manager_response.json()["id"]
+
+    from app.models import User
+    manager_user = db_session.query(User).filter_by(id=manager_id).first()
+    manager_user.role = "manager"
+    db_session.commit()
+
+    login_data = {"username": manager_data["username"], "password": manager_data["password"]}
+    login_response = client.post("/auth/login", data=login_data)
+    auth_token = login_response.json().get("access_token")
+
+    change_login_data = {
+        "id": regular_user_id,
+        "new_username": "new_regular_username"
+    }
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    response = client.post("/manager/change-login", json=change_login_data, headers=headers)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["username"] == "new_regular_username"
+
+
+def test_manager_change_role(client, db_session):
+    regular_user_data = {"username": "regular_user2", "password": "regular_pass2"}
+    regular_user_response = client.post("/auth/register", json=regular_user_data)
+    regular_user_id = regular_user_response.json()["id"]
+
+
+    manager_data = {"username": "manager_user2", "password": "manager_pass2"}
+    manager_response = client.post("/auth/register", json=manager_data)
+    manager_id = manager_response.json()["id"]
+
+    from app.models import User
+    manager_user = db_session.query(User).filter_by(id=manager_id).first()
+    manager_user.role = "manager"
+    db_session.commit()
+
+    login_data = {"username": manager_data["username"], "password": manager_data["password"]}
+    login_response = client.post("/auth/login", data=login_data)
+    auth_token = login_response.json().get("access_token")
+
+    change_role_data = {
+        "id": regular_user_id,
+        "new_role": "tester"
+    }
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    response = client.post("/manager/change-role", json=change_role_data, headers=headers)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["role"] == "tester"
+
+
+def test_manager_delete_task(client, db_session):
+    manager_data = {"username": "manager_user3", "password": "manager_pass3"}
+    manager_response = client.post("/auth/register", json=manager_data)
+    manager_id = manager_response.json()["id"]
+
+    from app.models import User
+    manager_user = db_session.query(User).filter_by(id=manager_id).first()
+    manager_user.role = "manager"
+    db_session.commit()
+
+    login_data = {"username": manager_data["username"], "password": manager_data["password"]}
+    login_response = client.post("/auth/login", data=login_data)
+    auth_token = login_response.json().get("access_token")
+    headers = {"Authorization": f"Bearer {auth_token}"}
+
+    task_data = {
+        "type": "bug",
+        "title": "Task to delete",
+        "description": "This task will be deleted",
+        "priority": "high",
+        "assignee_id": 0,
+        "blocks": [],
+        "blocked_by": []
+    }
+    create_response = client.post("/create-task", json=task_data, headers=headers)
+    task_id = create_response.json()["id"]
+
+    response = client.post(
+        "/manager/delete-task?task_id={}".format(task_id),
+        headers=headers
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    check_response = client.get(f"/tasks/{task_id}", headers=headers)
+    assert check_response.status_code == status.HTTP_404_NOT_FOUND

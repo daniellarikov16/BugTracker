@@ -88,3 +88,7 @@ def read_tasks(db: Session = Depends(get_db)):
 @app.post("/tasks/search")
 async def search_tasks(search: schemas.TaskSearch, db: Session = Depends(get_db)):
     return crud.search_task(db, search)
+
+@app.get('/health')
+def health():
+    return "OK", 200
